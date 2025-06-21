@@ -281,13 +281,34 @@
 </div>
 
 <script>
+// Global function to handle context menu
+function handleContextMenu(event, type, id) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Get the Livewire component instance
+    const component = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
+    
+    // Call the Livewire method
+    component.call('showContextMenu', type, id, event.clientX, event.clientY);
+}
+
 document.addEventListener('livewire:init', () => {
     // Prevent default context menu on the entire page
     document.addEventListener('contextmenu', function(event) {
         // Only prevent default if we're not on a file or folder item
-        const target = event.target.closest('[oncontextmenu]');
+        const target = event.target.closest('[data-type]');
         if (!target) {
             event.preventDefault();
+        }
+    });
+
+    // Handle clicking outside context menu to hide it
+    document.addEventListener('click', function(event) {
+        const contextMenu = document.querySelector('.context-menu');
+        if (contextMenu && !contextMenu.contains(event.target)) {
+            const component = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
+            component.call('hideContextMenu');
         }
     });
 
