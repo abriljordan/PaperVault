@@ -138,16 +138,36 @@
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 <!-- Folders (subfolders in current folder) -->
                 @foreach($folders as $folder)
-                    <div class="flex flex-col items-center bg-white rounded-lg shadow p-4 hover:shadow-lg transition">
-                        <button wire:click="enterFolder({{ $folder->id }})" class="flex flex-col items-center">
-                            <svg class="w-10 h-10 text-yellow-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3.172a2 2 0 011.414.586l1.828 1.828A2 2 0 0012.828 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
-                            <span class="mt-1 text-sm font-medium text-gray-700">{{ $folder->name }}</span>
+                    <div class="flex flex-col items-center bg-white rounded-lg shadow p-4 hover:shadow-lg transition h-32"
+                         data-type="folder" 
+                         data-id="{{ $folder->id }}"
+                         oncontextmenu="handleContextMenu(event, 'folder', {{ $folder->id }})">
+                        <button type="button" wire:click="enterFolder({{ $folder->id }})" 
+                                class="flex flex-col items-center w-full h-full focus:outline-none">
+                            <svg class="w-10 h-10 text-yellow-400 mb-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h3.172a2 2 0 011.414.586l1.828 1.828A2 2 0 0012.828 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+                            @if($editingItem === "folder-{{ $folder->id }}")
+                                <div class="w-full">
+                                    <input 
+                                        type="text" 
+                                        wire:model="editingName" 
+                                        wire:keydown.enter="saveRename"
+                                        wire:keydown.escape="cancelRename"
+                                        class="w-full text-sm border rounded px-2 py-1 text-center"
+                                        autofocus
+                                    >
+                                </div>
+                            @else
+                                <span class="mt-1 text-sm font-medium text-gray-700 text-center truncate w-full" title="{{ $folder->name }}">{{ $folder->name }}</span>
+                            @endif
                         </button>
                     </div>
                 @endforeach
                 <!-- Files -->
                 @foreach($files as $file)
-                    <div class="flex flex-col items-center bg-white rounded-lg shadow p-4 hover:shadow-lg transition">
+                    <div class="flex flex-col items-center bg-white rounded-lg shadow p-4 hover:shadow-lg transition h-32"
+                         data-type="file" 
+                         data-id="{{ $file->id }}"
+                         oncontextmenu="handleContextMenu(event, 'file', {{ $file->id }})">
                         @php
                             $fileExtension = strtolower(pathinfo($file->name, PATHINFO_EXTENSION));
                             $isPdf = $fileExtension === 'pdf';
@@ -158,7 +178,7 @@
                         @endphp
                         
                         @if($isPdf)
-                            <svg class="w-10 h-10 text-red-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-red-500 mb-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
                                 <path d="M14 2v6h6"/>
                                 <path d="M16 13H8"/>
@@ -166,13 +186,13 @@
                                 <path d="M10 9H8"/>
                             </svg>
                         @elseif($isImage)
-                            <svg class="w-10 h-10 text-green-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-green-500 mb-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                 <circle cx="8.5" cy="8.5" r="1.5"/>
                                 <polyline points="21,15 16,10 5,21"/>
                             </svg>
                         @elseif($isDocument)
-                            <svg class="w-10 h-10 text-blue-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-blue-500 mb-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
                                 <path d="M14 2v6h6"/>
                                 <path d="M16 13H8"/>
@@ -180,7 +200,7 @@
                                 <path d="M10 9H8"/>
                             </svg>
                         @elseif($isSpreadsheet)
-                            <svg class="w-10 h-10 text-green-600 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-green-600 mb-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
                                 <path d="M14 2v6h6"/>
                                 <path d="M16 13H8"/>
@@ -188,7 +208,7 @@
                                 <path d="M10 9H8"/>
                             </svg>
                         @elseif($isPresentation)
-                            <svg class="w-10 h-10 text-orange-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-orange-500 mb-2 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
                                 <path d="M14 2v6h6"/>
                                 <path d="M16 13H8"/>
@@ -196,20 +216,100 @@
                                 <path d="M10 9H8"/>
                             </svg>
                         @else
-                            <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-10 h-10 text-gray-400 mb-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect x="4" y="4" width="16" height="16" rx="2"/>
                                 <path d="M8 2v4M16 2v4M4 10h16"/>
                             </svg>
                         @endif
                         
-                        <span class="mt-1 text-sm font-medium text-gray-700 text-center">{{ $file->name }}</span>
-                        <div class="flex gap-2 mt-2">
-                            <a href="{{ route('files.download', $file->id) }}" class="text-indigo-600 hover:underline text-xs">Download</a>
-                            <button wire:click="deleteFile({{ $file->id }})" class="text-red-500 hover:underline text-xs">Delete</button>
-                        </div>
+                        @if($editingItem === "file-{{ $file->id }}")
+                            <div class="w-full">
+                                <input 
+                                    type="text" 
+                                    wire:model="editingName" 
+                                    wire:keydown.enter="saveRename"
+                                    wire:keydown.escape="cancelRename"
+                                    class="w-full text-sm border rounded px-2 py-1 text-center"
+                                    autofocus
+                                >
+                            </div>
+                        @else
+                            <span class="mt-1 text-sm font-medium text-gray-700 text-center truncate w-full" title="{{ $file->name }}">{{ $file->name }}</span>
+                        @endif
                     </div>
                 @endforeach
             </div>
         </div>
     </main>
+
+    <!-- Context Menu -->
+    @if($contextMenu)
+        <div class="fixed z-50 bg-white border rounded shadow-lg py-1 min-w-32" 
+             style="left: {{ $contextMenuX }}px; top: {{ $contextMenuY }}px;"
+             wire:click.away="hideContextMenu">
+            @php
+                $parts = explode('-', $contextMenu);
+                $type = $parts[0];
+                $id = $parts[1];
+            @endphp
+            
+            @if($type === 'folder')
+                <button wire:click="startRename('folder', {{ $id }})" 
+                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Rename
+                </button>
+                <button wire:click="deleteFolder({{ $id }})" 
+                        class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    Delete
+                </button>
+            @elseif($type === 'file')
+                <a href="{{ route('files.download', $id) }}" 
+                   class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Download
+                </a>
+                <button wire:click="startRename('file', {{ $id }})" 
+                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Rename
+                </button>
+                <button wire:click="deleteFile({{ $id }})" 
+                        class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    Delete
+                </button>
+            @endif
+        </div>
+    @endif
 </div>
+
+<script>
+document.addEventListener('livewire:init', () => {
+    // Prevent default context menu on the entire page
+    document.addEventListener('contextmenu', function(event) {
+        // Only prevent default if we're not on a file or folder item
+        const target = event.target.closest('[oncontextmenu]');
+        if (!target) {
+            event.preventDefault();
+        }
+    });
+
+    // Handle clicking outside edit fields to save
+    document.addEventListener('click', function(event) {
+        const editInputs = document.querySelectorAll('input[wire\\:model="editingName"]');
+        editInputs.forEach(input => {
+            if (!input.contains(event.target)) {
+                // Check if we're not clicking on the actions dropdown
+                const actionsDropdown = input.closest('.relative')?.querySelector('.group-hover\\:opacity-100');
+                if (!actionsDropdown || !actionsDropdown.contains(event.target)) {
+                    Livewire.dispatch('saveRename');
+                }
+            }
+        });
+    });
+
+    // Handle keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            Livewire.dispatch('cancelRename');
+        }
+    });
+});
+</script>

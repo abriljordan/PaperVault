@@ -23,6 +23,11 @@ class FileManager extends Component
     public $modalFolderName = '';
     public $uploadError = '';
     public $uploadProgress = 0;
+    public $editingItem = null; // 'file-{id}' or 'folder-{id}'
+    public $editingName = '';
+    public $contextMenu = null; // 'file-{id}' or 'folder-{id}'
+    public $contextMenuX = 0;
+    public $contextMenuY = 0;
 
     protected $rules = [
         'newFiles.*' => 'file|max:102400', // 100MB max file size for document digitization
@@ -161,6 +166,76 @@ class FileManager extends Component
         $file = File::findOrFail($fileId);
         $file->delete();
         $this->loadFilesAndFolders();
+    }
+
+    public function deleteFolder($folderId)
+    {
+        $folder = Folder::findOrFail($folderId);
+        $folder->delete();
+        $this->loadFilesAndFolders();
+    }
+
+    public function startRename($type, $id)
+    {
+        if ($type === 'file') {
+            $file = File::findOrFail($id);
+            $this->editingItem = "file-{$id}";
+            $this->editingName = $file->name;
+        } elseif ($type === 'folder') {
+            $folder = Folder::findOrFail($id);
+            $this->editingItem = "folder-{$id}";
+            $this->editingName = $folder->name;
+        }
+        
+        // Hide context menu when starting rename
+        $this->hideContextMenu();
+    }
+
+    public function cancelRename()
+    {
+        $this->editingItem = null;
+        $this->editingName = '';
+    }
+
+    public function saveRename()
+    {
+        if (empty(trim($this->editingName))) {
+            return;
+        }
+
+        $parts = explode('-', $this->editingItem);
+        $type = $parts[0];
+        $id = $parts[1];
+
+        try {
+            if ($type === 'file') {
+                $file = File::findOrFail($id);
+                $file->update(['name' => trim($this->editingName)]);
+            } elseif ($type === 'folder') {
+                $folder = Folder::findOrFail($id);
+                $folder->update(['name' => trim($this->editingName)]);
+            }
+
+            $this->editingItem = null;
+            $this->editingName = '';
+            $this->loadFilesAndFolders();
+        } catch (\Exception $e) {
+            Log::error('Rename error: ' . $e->getMessage());
+        }
+    }
+
+    public function showContextMenu($type, $id, $x, $y)
+    {
+        $this->contextMenu = "{$type}-{$id}";
+        $this->contextMenuX = $x;
+        $this->contextMenuY = $y;
+    }
+
+    public function hideContextMenu()
+    {
+        $this->contextMenu = null;
+        $this->contextMenuX = 0;
+        $this->contextMenuY = 0;
     }
 
     public function render()
