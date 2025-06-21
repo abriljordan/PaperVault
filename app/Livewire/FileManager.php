@@ -29,6 +29,7 @@ class FileManager extends Component
     public $contextMenuX = 0;
     public $contextMenuY = 0;
 
+
     protected $rules = [
         'newFiles.*' => 'file|max:102400', // 100MB max file size for document digitization
     ];
