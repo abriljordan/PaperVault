@@ -7,12 +7,12 @@ use App\Models\File;
 use App\Models\Folder;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FileManager extends Component
 {
     use WithFileUploads;
 
-#    public string $layout = 'layouts.app';
     public $currentFolder = null;
     public $folders = [];
     public $files = [];
@@ -21,9 +21,28 @@ class FileManager extends Component
     public $showNewMenu = false;
     public $showCreateFolderModal = false;
     public $modalFolderName = '';
+    public $uploadError = '';
+    public $uploadProgress = 0;
+
+    protected $rules = [
+        'newFiles.*' => 'file|max:102400', // 100MB max file size for document digitization
+    ];
+
+    protected $messages = [
+        'newFiles.*.file' => 'The uploaded file is invalid.',
+        'newFiles.*.max' => 'The file size must not exceed 100MB.',
+    ];
 
     public function mount($folderId = null)
     {
+        // Set PHP upload limits for document digitization
+        ini_set('upload_max_filesize', '100M');
+        ini_set('post_max_size', '100M');
+        ini_set('max_execution_time', '600');
+        ini_set('max_input_time', '600');
+        ini_set('memory_limit', '512M');
+        ini_set('max_file_uploads', '20');
+        
         $this->currentFolder = $folderId;
         $this->loadFilesAndFolders();
     }
@@ -36,21 +55,67 @@ class FileManager extends Component
 
     public function updatedNewFiles()
     {
-        foreach ($this->newFiles as $file) {
-            $path = $file->store('files');
-            File::create([
-                'name' => $file->getClientOriginalName(),
-                'folder_id' => $this->currentFolder,
-                'storage_path' => $path,
-                'uploaded_on_cloud' => true,
-                'user_id' => Auth::id(),
-                'is_folder' => false,
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id(),
-            ]);
+        $this->uploadError = '';
+        $this->uploading = true;
+        $this->uploadProgress = 0;
+        
+        try {
+            Log::info('Starting file upload process. Files count: ' . count($this->newFiles));
+            
+            $this->validate();
+            $this->uploadProgress = 25;
+            
+            foreach ($this->newFiles as $index => $file) {
+                Log::info('Processing file: ' . $file->getClientOriginalName() . ' (Size: ' . $file->getSize() . ', MIME: ' . $file->getMimeType() . ')');
+                
+                // Check if file is actually uploaded
+                if (!$file->isValid()) {
+                    throw new \Exception('File upload failed: ' . $file->getError());
+                }
+                
+                $path = $file->store('files');
+                Log::info('File stored at: ' . $path);
+                $this->uploadProgress = 50 + ($index * 25);
+                
+                $fileRecord = File::create([
+                    'name' => $file->getClientOriginalName(),
+                    'folder_id' => $this->currentFolder,
+                    'storage_path' => $path,
+                    'uploaded_on_cloud' => true,
+                    'user_id' => Auth::id(),
+                    'is_folder' => false,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ]);
+                
+                Log::info('File record created with ID: ' . $fileRecord->id);
+            }
+            
+            $this->newFiles = [];
+            $this->loadFilesAndFolders();
+            $this->uploadProgress = 100;
+            Log::info('File upload process completed successfully');
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error: ' . json_encode($e->errors()));
+            $this->uploadError = 'Validation failed: ' . implode(', ', array_flatten($e->errors()));
+            $this->newFiles = [];
+        } catch (\Exception $e) {
+            Log::error('File upload error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            $this->uploadError = 'Upload failed: ' . $e->getMessage();
+            $this->newFiles = [];
+        } finally {
+            $this->uploading = false;
         }
-        $this->newFiles = [];
-        $this->loadFilesAndFolders();
+    }
+
+    public function testUpload()
+    {
+        Log::info('Testing upload functionality');
+        $this->uploadError = 'Test upload method called - check logs';
     }
 
     public function toggleNewMenu()
@@ -100,6 +165,6 @@ class FileManager extends Component
 
     public function render()
     {
-        return view('livewire.file-manager')->layout('layouts.app');;
+        return view('livewire.file-manager')->layout('layouts.app');
     }
 }

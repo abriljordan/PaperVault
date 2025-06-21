@@ -81,6 +81,12 @@
                                 Upload Files
                                 <input type="file" multiple wire:model="newFiles" class="hidden">
                             </label>
+                            <div class="px-4 py-2 text-xs text-gray-500 border-t">
+                                Max file size: 100MB
+                            </div>
+                            <button wire:click="testUpload" class="block w-full text-left px-4 py-2 hover:bg-indigo-50 text-xs text-gray-500">
+                                Test Upload
+                            </button>
                         </div>
                     @endif
                 </div>
@@ -95,6 +101,26 @@
                 </button>
             </div>
         </div>
+
+        <!-- Upload Error Display -->
+        @if($uploadError)
+            <div class="px-8 py-2 bg-red-50 border-b border-red-200">
+                <div class="text-red-600 text-sm">{{ $uploadError }}</div>
+            </div>
+        @endif
+
+        <!-- Upload Progress -->
+        @if($uploading)
+            <div class="px-8 py-2 bg-blue-50 border-b border-blue-200">
+                <div class="flex items-center">
+                    <div class="text-blue-600 text-sm mr-2">Uploading...</div>
+                    <div class="flex-1 bg-blue-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ $uploadProgress }}%"></div>
+                    </div>
+                    <div class="text-blue-600 text-sm ml-2">{{ $uploadProgress }}%</div>
+                </div>
+            </div>
+        @endif
 
         <!-- Breadcrumbs -->
         <div class="px-8 py-2 bg-gray-50 border-b">
@@ -122,8 +148,61 @@
                 <!-- Files -->
                 @foreach($files as $file)
                     <div class="flex flex-col items-center bg-white rounded-lg shadow p-4 hover:shadow-lg transition">
-                        <svg class="w-10 h-10 text-blue-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/></svg>
-                        <span class="mt-1 text-sm font-medium text-gray-700">{{ $file->name }}</span>
+                        @php
+                            $fileExtension = strtolower(pathinfo($file->name, PATHINFO_EXTENSION));
+                            $isPdf = $fileExtension === 'pdf';
+                            $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']);
+                            $isDocument = in_array($fileExtension, ['doc', 'docx', 'txt', 'rtf']);
+                            $isSpreadsheet = in_array($fileExtension, ['xls', 'xlsx', 'csv']);
+                            $isPresentation = in_array($fileExtension, ['ppt', 'pptx']);
+                        @endphp
+                        
+                        @if($isPdf)
+                            <svg class="w-10 h-10 text-red-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M16 13H8"/>
+                                <path d="M16 17H8"/>
+                                <path d="M10 9H8"/>
+                            </svg>
+                        @elseif($isImage)
+                            <svg class="w-10 h-10 text-green-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21,15 16,10 5,21"/>
+                            </svg>
+                        @elseif($isDocument)
+                            <svg class="w-10 h-10 text-blue-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M16 13H8"/>
+                                <path d="M16 17H8"/>
+                                <path d="M10 9H8"/>
+                            </svg>
+                        @elseif($isSpreadsheet)
+                            <svg class="w-10 h-10 text-green-600 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M16 13H8"/>
+                                <path d="M16 17H8"/>
+                                <path d="M10 9H8"/>
+                            </svg>
+                        @elseif($isPresentation)
+                            <svg class="w-10 h-10 text-orange-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                                <path d="M14 2v6h6"/>
+                                <path d="M16 13H8"/>
+                                <path d="M16 17H8"/>
+                                <path d="M10 9H8"/>
+                            </svg>
+                        @else
+                            <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                                <path d="M8 2v4M16 2v4M4 10h16"/>
+                            </svg>
+                        @endif
+                        
+                        <span class="mt-1 text-sm font-medium text-gray-700 text-center">{{ $file->name }}</span>
                         <div class="flex gap-2 mt-2">
                             <a href="{{ route('files.download', $file->id) }}" class="text-indigo-600 hover:underline text-xs">Download</a>
                             <button wire:click="deleteFile({{ $file->id }})" class="text-red-500 hover:underline text-xs">Delete</button>

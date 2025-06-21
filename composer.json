@@ -1,11 +1,13 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/vue-starter-kit",
+    "name": "papervault/file-manager",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A modern Google Drive-like file management system built with Laravel and Livewire.",
     "keywords": [
         "laravel",
-        "framework"
+        "livewire",
+        "file-manager",
+        "papervault"
     ],
     "license": "MIT",
     "require": {

@@ -99,12 +99,20 @@ npm run build
 
 ### Step 7: Start the Server
 ```bash
-# Start Laravel development server
-php artisan serve
+# Start Laravel development server with custom PHP configuration (100MB upload limits)
+./start-server.sh
+
+# Or on Windows/PowerShell:
+./start-server.bat
+
+# Or manually with custom PHP configuration:
+php -c php.ini -S localhost:8000 -t public
 
 # Or use the combined dev script
 composer run dev
 ```
+
+**Important**: Use the custom server startup scripts to ensure 100MB upload limits for document digitization.
 
 Visit `http://localhost:8000` to access PaperVault!
 
